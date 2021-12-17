@@ -3,13 +3,9 @@
 
 def test_align() -> None:
     """Testing the align() function."""
-    assert 2 + 2 == 4
+    assert False
 
 
 def test_edits() -> None:
     """Testing the edits() function."""
-    assert 2 + 2 == 4
-
-
-def test_local_align() -> None:
-    """Testing the local_align() function."""
+    assert False

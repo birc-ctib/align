@@ -90,12 +90,7 @@ Seq A = A            ; Seq B = A;            Op = 'M' => Column (A,A)
 
 You will write two functions, `align()` and `edits()` that translate between the two representations. The `align()` function takes two sequences and a list of edits, represented as a string, and returns the two rows in the corresponding alignment. The function `edits()` takes the two rows of the pairwise alignment and returns the edits sequence as a string.
 
-For local alignments, you don't process the entire genomic sequence when you have mapped a read, but only the bit that is part of the alignment. You will write a third function, `local_align()`, that does this. It takes a full chromosomal sequence as one input, the position where the alignment starts, the read and the edits, and should return the two rows in the pairwise alignment.
-
-
-In the SAM format, you have information about where a local alignment starts, you have one of the two sequences--the read--and then you have a description of the alignment. This closely resembles the data we have in `local_align()`.[^In the SAM format there is also various quality statistics and other mapping properties that we are ignoring in this project, but for the essentials of getting a local alignment out of a genome, it has the same information as what we are working with.]
-
-The edits in SAM are not represented exactly as we have done, however; they are represented in the [CIGAR format](https://drive5.com/usearch/manual/cigar.html). You can follow the link to see a full description--the format is simple and the description is short--but the short comparison is that the CIGAR format has a few more operations and encode them in a slightly different way.
+The edits in the SAM format are not represented exactly as we have done, however; they are represented in the [CIGAR format](https://drive5.com/usearch/manual/cigar.html). You can follow the link to see a full description--the format is simple and the description is short--but the short comparison is that the CIGAR format has a few more operations and encode them in a slightly different way.
 
 The CIGAR format can distinguish between matches and substitutions and various other things, but most tools do not use these extra codes and stick to those we used above. We are not going to explore these extra codes here; they do not add anything qualitatively to how we manipulate alignments, they only allow us to specify in more detail when a match is a match or what kind of mismatch we have if we have a mismatch.
 
@@ -178,7 +173,7 @@ When you push changes from your repository to GitHub, GitHub will also run tests
 
 ## Template code
 
-In the `src/align.py` file you will find the functions `align()`, `edits()`, and `local_align()` with a description of what their interface should be. You need to implement these.
+In the `src/align.py` file you will find the functions `align()` and `edits()` with a description of what their interface should be. You need to implement these.
 
 The file `src/test_align.py` contains code for testing the functions in `src/align.py`. You are welcome to, and encouraged to, add to the tests.
 
@@ -201,4 +196,57 @@ The way the user informs the program about which flags/options to use and where 
 
 The file `src/main.py` shows you a very rudementary way of handling this in Python; in later projects we will see more advanced (and better) techniques.
 
-**FIXME: more here**
+You do not need to modify anything in this file, but I encourage you to read it, to get an idea about how you can turn your own code into something that works as a command-line tool. It won't be long before you will need to know how to do this.
+
+For this project, though, once you have implemented the functions in `src/align.py` and `src/cigar.py`, you can use `src/main.py` as a command-line tool.
+
+It is the kind of tool that functions as a wrapper around more than one command, just like the `git` command is really multiple commands (`git commit`, `git push`, `git pull`, ...). Such wrapped commands are often called *sub-commands*, and you pick the right sub-command via the first argument. For `src/main.py`, you can either call the tool with
+
+```sh
+> python3 src/main.py from_cig
+```
+
+or with
+
+```sh
+> python3 src/main.py to_cig
+```
+
+The first command translates from CIGAR strings to pairwise alignments, and the second translate the other way.
+
+Either command can take zero, one or two additional arguments. If you do not specify any arguments, the commands will read from `stdin` and write to `stdout`, so you could, for example, use the `from_cig` subcommand as
+
+```sh
+> cat data/cigs.in | python3 src/main.py from_cig
+```
+
+to translate the data in `data/cigs.in` into pairwise alignments, or use
+
+```sh
+> cat data/alignments.in | python3 src/main.py to_cig
+```
+
+to translate the alignments in `data/alignments.in` into a CIGAR format.
+
+If you give the commands one more argument, they will interpret that is a file you want them to read their input from, so the two commands above could also be written as
+
+```sh
+> python3 src/main.py from_cig data/cigs.in
+```
+
+or
+
+```sh
+> python3 src/main.py to_cig data/alignments.in
+```
+
+One more argument, and you are specifying the output file as well, so
+
+```sh
+> python3 src/main.py from_cig data/cigs.in my-cigs.out
+```
+
+would write the result to `my-cigs.out`.
+
+The input format for the two commands differs, as one would expect since they translate in opposite directions. The input to `from_cig` is one line per alignment with the two sequences and a CIGAR string, separated by tabs. The output is three lines per alignment; a row per aligned sequence and a blank line after that. The input to `to_cig` is the output format from `from_cig` and the output is the input format for `from_cig`. Again, as one would expect if they are translating in opposite directions.
+
