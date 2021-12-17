@@ -1,6 +1,15 @@
-# This directory will be checked with pytest. It will examine
-# all files that start with test_*.py and run all functions with
-# names that start with test_
+"""Tests for the align module."""
 
-def test_1984():
+
+def test_align() -> None:
+    """Testing the align() function."""
     assert 2 + 2 == 4
+
+
+def test_edits() -> None:
+    """Testing the edits() function."""
+    assert 2 + 2 == 4
+
+
+def test_local_align() -> None:
+    """Testing the local_align() function."""

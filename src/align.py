@@ -64,7 +64,7 @@ def edits(x: str, y: str) -> str:
 
 
 def local_align(chrom: str, pos: int, read: str, edits: str) -> tuple[str, str]:
-    """Extracts a local alignment from a chromosome and a pattern.
+    """Extract a local alignment from a chromosome and a pattern.
 
     This function works almost as align(), except that it doesn't
     align all of the chrom sequence but only a subsequence of it.
