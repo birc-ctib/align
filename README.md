@@ -15,7 +15,7 @@ In applications where you map short reads against a full genome, you will have h
 
 We cannot store this as a full alignment a short read against a full genome--and even if we could, it would not be helpful to scroll through millions of lines of gaps to try to find where the read sits in the genome. Instead, you need to store the genomic location, i.e., a chromosome and a position, and a local alignment that starts there.
 
-If, for example, chromsome 14 at locattion 123,345 and 10 bases forward looks like this
+If, for example, chromsome 14 at location 123,345 and 10 bases forward looks like this
 
 ```
 ...ACGTACGTAC...
@@ -41,17 +41,104 @@ AC-AACTGTCC
 
 or something to that affect.
 
-It would be a better solution than having the full genome in each alignment, but it is still somewhat wasteful in the storage required.
+This wouldn't necessarily be a bad way to represent mapped reads, but it is not how it is usually done. The so-called [SAM file format](https://en.wikipedia.org/wiki/SAM_(file_format)) doesn't included the genome-part of the pairwise alignment, but instead it stores the location (as above), the read sequence, and a description of the alignment, from which we can reconstruct it.
 
-If you have sequenced a genome to, say, 30X, it means that you have reads that over each base pair in the genome on average 30 times. If you store local alignments in a format like this, the full genomic sequence will be represented about 30 times, because we have a copy of a base-pair each time it is part of a read. (And it is actually substantially worse than this, since we also store all the flanking sequence).
+For most practical purposes, there is no benefit to one representation over another; the second one is just the one most tools expect. We can automatically translate between the two representations, and that is what this project is about.
+
+## CIGARs, edits, and pairwise alignments
+
+We won't work with the SAM format here, it has a lot of fields that we are not interested in, but we will explore how it represents alignments, how we can create one of our familiar local alignments from its representation, and how we can translate a familiar pairwise alignment into the format it uses.
+
+To understand the dual representation of an alignment, we need to think of what the familiar alignment means in terms of how one sequence gets edited into another. In a simple alignment like this one:
+
+```
+ACCACAGT-CATA
+A-CAGAGTACAAA
+```
+
+we can describe how to get from the first to the second sequence by going through the columns one by one. First we see an `A` over an `A`, and we can say that to get from the first sequence to the second, we just *match* the two. We will abbreviate that `M`. For the next column, we have a `C` over a gap, so to go from the first sequence to the second, we need to *delete* a character; we abbreviate this `D`. 
+
+For the next two columns we match again, since we go from a `C` to a `C` and an `A` to an `A`. Then we see a `C` over a `G`. To go from the first sequence to the second, we need to substitute a `C` to a `G`. It would be natural to abbreviate this `S`, but we are going to use `M` for *mismatch*. I'm aware that we already used `M` for match, but it turns out to work out, because both of the `M` operations put a symbol from the first sequence on top of a symbol from the second, and the difference between matches and substitutions only matter if we wish to count how close the sequences are; it doesn't matter for describing the alignment.
+
+Later in the sequence we have a column that puts a gap above an `A`. This is an *insertion* operation--it inserts a character to change the first sequence into the second--and we abbreviate it as `I`.
+
+The same alignment, with the edits annotation written below it, looks like this:
+
+```
+ACCACAGT-CATA
+A-CAGAGTACAAA
+MDMMMMMMIMMMM
+```
+
+This sequence of edits, `MDMMMMMMIMMMM`, is a complete description of the alignment. If you have the two original sequences, `ACCACAGTCATA` and `ACAGAGTACAAA`, and the edits description, you can reconstruct the alignment. There are three differnt edit operations: `M`, `D`, and `I`. When you see an `M`, you remove the first letter from each of your sequences and make a column out of them. When you see a `D`, you take the first letter in the first second and make a column of it and a gap. If you see an `I`, you make a column of a gap and the first character in the second sequence.
+
+```
+Seq A = ACCACAGTCATA ; Seq B = ACAGAGTACAAA; Op = 'M' => Column (A,A)
+Seq A = CCACAGTCATA  ; Seq B = CAGAGTACAAA;  Op = 'D' => Column (C,-)
+Seq A = CACAGTCATA   ; Seq B = CAGAGTACAAA;  Op = 'M' => Column (C,C)
+Seq A = ACAGTCATA    ; Seq B = AGAGTACAAA;   Op = 'M' => Column (A,A)
+Seq A = CAGTCATA     ; Seq B = GAGTACAAA;    Op = 'M' => Column (C,G)
+Seq A = AGTCATA      ; Seq B = AGTACAAA;     Op = 'M' => Column (A,A)
+Seq A = GTCATA       ; Seq B = GTACAAA;      Op = 'M' => Column (G,G)
+Seq A = TCATA        ; Seq B = TACAAA;       Op = 'M' => Column (T,T)
+Seq A = CATA         ; Seq B = ACAAA;        Op = 'I' => Column (-,A)
+Seq A = CATA         ; Seq B = CAAA;         Op = 'M' => Column (C,C)
+Seq A = ATA          ; Seq B = AAA;          Op = 'M' => Column (A,A)
+Seq A = TA           ; Seq B = AA;           Op = 'M' => Column (T,A)
+Seq A = A            ; Seq B = A;            Op = 'M' => Column (A,A)
+```
+
+You will write two functions, `align()` and `edits()` that translate between the two representations. The `align()` function takes two sequences and a list of edits, represented as a string, and returns the two rows in the corresponding alignment. The function `edits()` takes the two rows of the pairwise alignment and returns the edits sequence as a string.
+
+For local alignments, you don't process the entire genomic sequence when you have mapped a read, but only the bit that is part of the alignment. You will write a third function, `local_align()`, that does this. It takes a full chromosomal sequence as one input, the position where the alignment starts, the read and the edits, and should return the two rows in the pairwise alignment.
 
 
+In the SAM format, you have information about where a local alignment starts, you have one of the two sequences--the read--and then you have a description of the alignment. This closely resembles the data we have in `local_align()`.[^In the SAM format there is also various quality statistics and other mapping properties that we are ignoring in this project, but for the essentials of getting a local alignment out of a genome, it has the same information as what we are working with.]
 
+The edits in SAM are not represented exactly as we have done, however; they are represented in the [CIGAR format](https://drive5.com/usearch/manual/cigar.html). You can follow the link to see a full description--the format is simple and the description is short--but the short comparison is that the CIGAR format has a few more operations and encode them in a slightly different way.
 
+The CIGAR format can distinguish between matches and substitutions and various other things, but most tools do not use these extra codes and stick to those we used above. We are not going to explore these extra codes here; they do not add anything qualitatively to how we manipulate alignments, they only allow us to specify in more detail when a match is a match or what kind of mismatch we have if we have a mismatch.
 
-**FIXME: describe project**
+The different encoding, however, is interesting, and we will examine it more.
 
+In the CIGAR format, the sequence of edits above, `MDMMMMMMIMMMM`, is represented as `1M1D6M1I4M`. All reads come as pairs, where the first element is an integer and the second an operation, and you read `<i><op>` as "the next *i* operations are *op* operations". So, you expand the sequence `1M1D6M1I4M` as
 
+```
+1M => M      (1 M operation)
+1D => D      (1 D operation)
+6M => MMMMMM (6 M operations)
+1I => I      (1 I operation)
+4M => MMMM   (4 M operations)
+```
+
+and if you concatenate the result,
+
+```python
+>>> "".join(["M","D","MMMMMM","I","MMMM"])
+'MDMMMMMMIMMMM'
+```
+
+you get the same sequence of edits as we had before.
+
+Getting the numbers and operations out of a CIGAR string can be a little tricky, but I have provided a function for you, `split_pairs()`, that does this. Call it with a valid CIGAR string, i.e. a string the consists of pairs of integers and operations, and you get a list back with the integer-operation pair.
+
+Going the other direction requires that we identify blocks of the same operation. We could split the string `'MDMMMMMMIMMMM'` into the list of blocks `['M','D','MMMMMM','I','MMMM']`, and from that we could get the number we have to put in front of each operation using `len()`:
+
+```python
+>>> [len(block) for block in ['M','D','MMMMMM','I','MMMM']]
+[1, 1, 6, 1, 4]
+```
+
+and we can get the operation in each block by taking the first character:
+
+```python
+>>> [block[0] for block in ['M','D','MMMMMM','I','MMMM']]
+['M', 'D', 'M', 'I', 'M']
+```
+
+To get the CIGAR from the blocks, we just need to combine the two. To get the blocks, you can use the function `split_blocks()` that I have written for you, but you are, of course, also welcome to write your own.
+
+You will write two functions for working with CIGAR strings: `cigar_to_edits()` that translates a CIGAR string into a sequence of edits, and `edits_to_cigar()` that translates a string of edits into a CIGAR string.
 
 ## Setting up the template code
 
@@ -91,12 +178,18 @@ When you push changes from your repository to GitHub, GitHub will also run tests
 
 ## Template code
 
-**FIXME:** Descripe template code
+In the `src/align.py` file you will find the functions `align()`, `edits()`, and `local_align()` with a description of what their interface should be. You need to implement these.
+
+The file `src/test_align.py` contains code for testing the functions in `src/align.py`. You are welcome to, and encouraged to, add to the tests.
+
+In the `src/cigar.py` file you will find the functions `cigar_to_edits()` and `edits_to_cigar()` with a description of what their interface should be. You need to implement these. In the same file, you can find the helper functions `split_pairs()` and `split_blocks()` that I have written for you.
+
+The file `src/test_cibar.py` contains code for testing the functions in `src/cigar.py`. You are welcome to, and encouraged to, add to the tests.
 
 
 ## Building a command-line tool
 
-There is a third Python file in `src`, `src/main.py`, that will show you have to build a command-line program in Python. Generally, you can run any Python code by calling `python3` with the file that contains the code, e.g.
+There is a fifth Python file in `src`, `src/main.py`, that will show you have to build a command-line program in Python. Generally, you can run any Python code by calling `python3` with the file that contains the code, e.g.
 
 ```sh
 > python3 foo.py
