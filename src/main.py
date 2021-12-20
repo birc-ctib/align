@@ -140,11 +140,12 @@ if __name__ == '__main__':
             pass
         case 3:
             # one file argument
-            infile = open(sys.argv[2])
+            print("Feature not implemented.", file=sys.stderr)
+            sys.exit(1)
         case 4:
             # two file arguments
-            infile = open(sys.argv[2])
-            outfile = open(sys.argv[3], 'w')
+            print("Feature not implemented.", file=sys.stderr)
+            sys.exit(1)
         case _:
             # either too few or too many arguments
             print("Incorrect number of arguments.", file=sys.stderr)

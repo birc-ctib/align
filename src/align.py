@@ -16,25 +16,7 @@ def align(x: str, y: str, edits: str) -> tuple[str, str]:
     ('ACCACAGT-CATA', 'A-CAGAGTACAAA')
 
     """
-    i, j = 0, 0
-    row_x, row_y = [], []
-    for op in edits:
-        match op:
-            case 'M':
-                row_x.append(x[i])
-                row_y.append(y[j])
-                i += 1
-                j += 1
-            case 'D':
-                row_x.append(x[i])
-                row_y.append('-')
-                i += 1
-            case 'I':
-                row_x.append('-')
-                row_y.append(y[j])
-                j += 1
-
-    return "".join(row_x), "".join(row_y)
+    return "", ""
 
 
 def edits(x: str, y: str) -> str:
@@ -51,13 +33,4 @@ def edits(x: str, y: str) -> str:
     'MDMMMMMMIMMMM'
 
     """
-    assert len(x) == len(y)
-    edits = [None] * len(x)
-    for i, _ in enumerate(x):
-        if x[i] == '-':
-            edits[i] = 'I'
-        elif y[i] == '-':
-            edits[i] = 'D'
-        else:
-            edits[i] = 'M'
-    return "".join(edits)
+    return ""
