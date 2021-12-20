@@ -1,0 +1,60 @@
+name: Testing Apps
+
+on: [push]
+
+jobs:
+  make-testing:
+    name: Checking application
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checking out repository
+        uses: actions/checkout@v2
+
+      - name: "Installing Python"
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+    
+      - name: "Installing dependencies"
+        run: python3 -m pip install -r requirements.txt
+        shell: bash
+
+      - name: Checking the application with stdin and stdout
+        run: |
+          if ! cmp <(python3 src/main.py from_cig < data/cigs.in) data/cigs.out; then
+            echo "Incorrect output for python3 src/main.py from_cig < data/cigs.in"
+            diff <(python3 src/main.py from_cig < data/cigs.in) data/cigs.out
+          fi
+          if ! cmp <(python3 src/main.py to_cig < data/alignments.in) data/alignments.out; then
+            echo "Incorrect output for python3 src/main.py to_cig < data/alignments.in"
+            diff <(python3 src/main.py to_cig < data/alignments.in) data/alignments.out
+          fi
+        shell: bash
+
+      - name: Checking the application with file and stdout
+        run: |
+          if ! cmp <(python3 src/main.py from_cig data/cigs.in) data/cigs.out; then
+            echo "Incorrect output for python3 src/main.py from_cig data/cigs.in"
+            diff <(python3 src/main.py from_cig data/cigs.in) data/cigs.out
+          fi
+          if ! cmp <(python3 src/main.py to_cig data/alignments.in) data/alignments.out; then
+            echo "Incorrect output for python3 src/main.py to_cig data/alignments.in"
+            diff <(python3 src/main.py to_cig data/alignments.in) data/alignments.out
+          fi
+        shell: bash
+
+      - name: Checking the application with two files
+        run: |
+          out=$(mktemp /tmp/ctib.XXXXXX)
+          python3 src/main.py from_cig data/cigs.in $out
+          if ! cmp $out data/cigs.out; then
+            echo "Incorrect output for python3 src/main.py from_cig data/cigs.in $out"
+            diff $out data/cigs.out
+          fi
+          python3 src/main.py to_cig data/alignments.in $out
+          if ! cmp $out data/alignments.out; then
+            echo "Incorrect output for python3 src/main.py to_cig data/alignments.in $out"
+            diff $out data/alignments.out
+          fi
+          rm $out
+        shell: bash

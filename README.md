@@ -74,21 +74,25 @@ This sequence of edits, `MDMMMMMMIMMMM`, is a complete description of the alignm
 
 ```
 Seq A = ACCACAGTCATA ; Seq B = ACAGAGTACAAA; Op = 'M' => Column (A,A)
-Seq A = CCACAGTCATA  ; Seq B = CAGAGTACAAA;  Op = 'D' => Column (C,-)
-Seq A = CACAGTCATA   ; Seq B = CAGAGTACAAA;  Op = 'M' => Column (C,C)
-Seq A = ACAGTCATA    ; Seq B = AGAGTACAAA;   Op = 'M' => Column (A,A)
-Seq A = CAGTCATA     ; Seq B = GAGTACAAA;    Op = 'M' => Column (C,G)
-Seq A = AGTCATA      ; Seq B = AGTACAAA;     Op = 'M' => Column (A,A)
-Seq A = GTCATA       ; Seq B = GTACAAA;      Op = 'M' => Column (G,G)
-Seq A = TCATA        ; Seq B = TACAAA;       Op = 'M' => Column (T,T)
-Seq A = CATA         ; Seq B = ACAAA;        Op = 'I' => Column (-,A)
-Seq A = CATA         ; Seq B = CAAA;         Op = 'M' => Column (C,C)
-Seq A = ATA          ; Seq B = AAA;          Op = 'M' => Column (A,A)
-Seq A = TA           ; Seq B = AA;           Op = 'M' => Column (T,A)
-Seq A = A            ; Seq B = A;            Op = 'M' => Column (A,A)
+Seq A = CCACAGTCATA  ; Seq B = CAGAGTACAAA ; Op = 'D' => Column (C,-)
+Seq A = CACAGTCATA   ; Seq B = CAGAGTACAAA ; Op = 'M' => Column (C,C)
+Seq A = ACAGTCATA    ; Seq B = AGAGTACAAA  ; Op = 'M' => Column (A,A)
+Seq A = CAGTCATA     ; Seq B = GAGTACAAA   ; Op = 'M' => Column (C,G)
+Seq A = AGTCATA      ; Seq B = AGTACAAA    ; Op = 'M' => Column (A,A)
+Seq A = GTCATA       ; Seq B = GTACAAA     ; Op = 'M' => Column (G,G)
+Seq A = TCATA        ; Seq B = TACAAA      ; Op = 'M' => Column (T,T)
+Seq A = CATA         ; Seq B = ACAAA       ; Op = 'I' => Column (-,A)
+Seq A = CATA         ; Seq B = CAAA        ; Op = 'M' => Column (C,C)
+Seq A = ATA          ; Seq B = AAA         ; Op = 'M' => Column (A,A)
+Seq A = TA           ; Seq B = AA          ; Op = 'M' => Column (T,A)
+Seq A = A            ; Seq B = A           ; Op = 'M' => Column (A,A)
 ```
 
 You will write two functions, `align()` and `edits()` that translate between the two representations. The `align()` function takes two sequences and a list of edits, represented as a string, and returns the two rows in the corresponding alignment. The function `edits()` takes the two rows of the pairwise alignment and returns the edits sequence as a string.
+
+ - [ ] Implement the `align()` function according to the specifications in the documentation string and the description below.
+ - [ ] Implement the `edits()` function according to the specifications in the documentation string and the description below.
+ 
 
 The edits in the SAM format are not represented exactly as we have done, however; they are represented in the [CIGAR format](https://drive5.com/usearch/manual/cigar.html). You can follow the link to see a full description--the format is simple and the description is short--but the short comparison is that the CIGAR format has a few more operations and encode them in a slightly different way.
 
@@ -134,6 +138,10 @@ and we can get the operation in each block by taking the first character:
 To get the CIGAR from the blocks, we just need to combine the two. To get the blocks, you can use the function `split_blocks()` that I have written for you, but you are, of course, also welcome to write your own.
 
 You will write two functions for working with CIGAR strings: `cigar_to_edits()` that translates a CIGAR string into a sequence of edits, and `edits_to_cigar()` that translates a string of edits into a CIGAR string.
+
+- [ ] Implement the `cigar_to_edits()` function according to the specifications.
+ - [ ] Implement the `edits_to_cigar()` function according to the specifications.
+ 
 
 ## Setting up the template code
 
@@ -214,19 +222,38 @@ or with
 
 The first command translates from CIGAR strings to pairwise alignments, and the second translate the other way.
 
-Either command can take zero, one or two additional arguments. If you do not specify any arguments, the commands will read from `stdin` and write to `stdout`, so you could, for example, use the `from_cig` subcommand as
+The input format for the two commands differs, as one would expect since they translate in opposite directions. The input to `from_cig` is one line per alignment with the two sequences and a CIGAR string, separated by tabs. The output is three lines per alignment; a row per aligned sequence and a blank line after that. The input to `to_cig` is the output format from `from_cig` and the output is the input format for `from_cig`. Again, as one would expect if they are translating in opposite directions.
+
+
+Right now, both commands expect to get the input from `stdin` and they will write the output to `stdout`, so you could, for example, use the `from_cig` subcommand as
 
 ```sh
 > cat data/cigs.in | python3 src/main.py from_cig
 ```
+or
+
+```sh
+> python3 src/main.py from_cig < data/cigs.in
+```
 
 to translate the data in `data/cigs.in` into pairwise alignments, or use
 
+If you want the output to go to a file, you must redirect it
+
 ```sh
-> cat data/alignments.in | python3 src/main.py to_cig
+> python3 src/main.py from_cig < data/cigs.in > output.out
 ```
 
-to translate the alignments in `data/alignments.in` into a CIGAR format.
+You can pipe the commands to translate both ways, and
+
+```sh
+> cat data/cigs.in | python3 src/main.py from_cig | python3 src/main.py to_cig
+```
+
+should give us our input back again.
+
+
+Working only with `stdin` and `stdout` is a very primitive interface, and a user will typically expect that a program that can read a file can also take a filename as an argument, and while not all programs accept a filename for the output, it is common enough that we should consider providing it.
 
 If you give the commands one more argument, they will interpret that is a file you want them to read their input from, so the two commands above could also be written as
 
@@ -248,5 +275,31 @@ One more argument, and you are specifying the output file as well, so
 
 would write the result to `my-cigs.out`.
 
-The input format for the two commands differs, as one would expect since they translate in opposite directions. The input to `from_cig` is one line per alignment with the two sequences and a CIGAR string, separated by tabs. The output is three lines per alignment; a row per aligned sequence and a blank line after that. The input to `to_cig` is the output format from `from_cig` and the output is the input format for `from_cig`. Again, as one would expect if they are translating in opposite directions.
+The other command we support, `to_cig`, should also be able to handle file arguments.
 
+The arguments that a program gets are put in `sys.argv`, with the name of the program at `sys.argv[0]` and any following arguments after that. The number of real arguments this thus always `len(sys.argv) - 1`. You can test how many you have by checking `len(sys.argv)`:
+
+```python
+if len(sys.argv) == 1:
+    # zero arguments -- this is an error since we need at least the subcommand
+elif len(sys.argv) == 2:
+    # one argument -- sys.argv[1] is the subcommand; files are stdin and stdout
+elif len(sys.argv) == 3:
+    # two arguments -- use sys.argv[2] for input and stdout for output
+elif len(sys.argv) == 4:
+    # two arguments -- use sys.argv[2] for input and sys.argv[3] for output
+else:
+    # more than two arguments; that is an error
+```
+
+To open an input file, a file you want to read from, use `open("filename")` or `open("filename", "r")`, and to open an output file, a file you want to write to, use `open("filename", "w")`.
+
+ - [ ] Extend both programs such that if `len(sys.argv) in [3, 4]`, the program should read from a file you open as `open(sys.argv[2])`.
+ - [ ] Extend both programs such that if `len(sys.argv) == 4`, the program should write to a file you open as `open(sys.argv[3], "w")`.
+
+ If you have more than three arguments, terminate the program with `sys.exit(1)` to indicate an error.
+ 
+
+ We are not doing any sensible tests in the arguments in this project, so you will not get user-friendly error messages if you provide input files that do not exist, or try to write to a file you do not have permission to write to. That is something we will improve upon in later projects.
+
+Writing `python3 program.py` to run the program `program.py` doesn't look like other programs on the command-line, where we would usually just write `program` to run `program`. There isn't anything wrong with that, it just says that we use Python to execute the program. There are, however, ways of making Python programs look more like other programs. Several, in fact. But, you guessed it, we leave that for future projects. We have already covered a lot in one project, and once you have everything up and running, you can pad yourself on the shoulders and take a short break before we continue.

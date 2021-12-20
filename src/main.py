@@ -106,7 +106,8 @@ def to_cig_cmd(infile, outfile) -> None:
 def from_cig_cmd(infile, outfile) -> None:
     """Run the from_cig subcommand."""
     for line in infile:
-        x, y, cig = line.split()
+        # important to split on \t to handle empty strings
+        x, y, cig = line.split('\t')
         x, y = align.align(x, y, cigar.cigar_to_edits(cig))
         print(x, file=outfile)
         print(y, file=outfile)
@@ -124,6 +125,13 @@ def from_cig_cmd(infile, outfile) -> None:
 # the file for use as a module.
 if __name__ == '__main__':
 
+    if len(sys.argv) < 2:
+        print("Missing subcommand argument.", file=sys.stderr)
+        sys.exit(1)
+    if sys.argv[1] not in ["to_cig", "from_cig"]:
+        print(f"Unknown subcommand {sys.argv[1]}.", file=sys.stderr)
+        sys.exit(1)
+
     # Checking arguments and getting the files
     infile, outfile = sys.stdin, sys.stdout
     match len(sys.argv):
@@ -132,11 +140,11 @@ if __name__ == '__main__':
             pass
         case 3:
             # one file argument
-            infile = open(sys.argv[1])
+            infile = open(sys.argv[2])
         case 4:
             # two file arguments
-            infile = open(sys.argv[1])
-            outfile = open(sys.argv[2], 'w')
+            infile = open(sys.argv[2])
+            outfile = open(sys.argv[3], 'w')
         case _:
             # either too few or too many arguments
             print("Incorrect number of arguments.", file=sys.stderr)
@@ -147,7 +155,9 @@ if __name__ == '__main__':
     elif sys.argv[1] == "from_cig":
         from_cig_cmd(infile, outfile)
     else:
-        print(f"Unknown command '{sys.argv[1]}'", file=sys.stderr)
+        # The check above should prevent this, but it is always good
+        # to program defensively...
+        print(f"Unknown command '{sys.argv[1]}'.", file=sys.stderr)
         sys.exit(1)
 
     # It is polite to close files when we no longer need them.
