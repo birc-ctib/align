@@ -1,6 +1,26 @@
 {
     "tests": [
         {
+            "name": "Checking the application with stdin and stdout",
+            "setup": "",
+            "run": "bash .test/scripts/stdin-stdout.sh",
+            "input": "",
+            "output": "",
+            "comparison": "exact",
+            "timeout": 10,
+            "points": 1
+        },
+        {
+            "name": "Checking the application with input file and stdout",
+            "setup": "",
+            "run": "bash .test/scripts/input-stdout.sh",
+            "input": "",
+            "output": "",
+            "comparison": "exact",
+            "timeout": 10,
+            "points": 1
+        },
+        {
             "name": "Checking the application with two files",
             "setup": "",
             "run": "bash .test/scripts/two-files.sh",
