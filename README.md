@@ -1,6 +1,6 @@
 # Processing local alignments
 
-You are probably all familiar with sequence alignments, at least I assume that you are, so reading a pair-wise alignment such as
+You are probably all familiar with sequence alignments, at least we assume that you are, so reading a pair-wise alignment such as
 
 ```
 ACCACAGT-CATA
@@ -119,7 +119,7 @@ and if you concatenate the result,
 
 you get the same sequence of edits as we had before.
 
-Getting the numbers and operations out of a CIGAR string can be a little tricky, but I have provided a function for you, `split_pairs()`, that does this. Call it with a valid CIGAR string, i.e. a string the consists of pairs of integers and operations, and you get a list back with the integer-operation pair.
+Getting the numbers and operations out of a CIGAR string can be a little tricky, but we have provided a function for you, `split_pairs()`, that does this. Call it with a valid CIGAR string, i.e. a string the consists of pairs of integers and operations, and you get a list back with the integer-operation pair.
 
 Going the other direction requires that we identify blocks of the same operation. We could split the string `'MDMMMMMMIMMMM'` into the list of blocks `['M','D','MMMMMM','I','MMMM']`, and from that we could get the number we have to put in front of each operation using `len()`:
 
@@ -135,7 +135,7 @@ and we can get the operation in each block by taking the first character:
 ['M', 'D', 'M', 'I', 'M']
 ```
 
-To get the CIGAR from the blocks, we just need to combine the two. To get the blocks, you can use the function `split_blocks()` that I have written for you, but you are, of course, also welcome to write your own.
+To get the CIGAR from the blocks, we just need to combine the two. To get the blocks, you can use the function `split_blocks()` that we have written for you, but you are, of course, also welcome to write your own.
 
 You will write two functions for working with CIGAR strings: `cigar_to_edits()` that translates a CIGAR string into a sequence of edits, and `edits_to_cigar()` that translates a string of edits into a CIGAR string.
 
@@ -204,7 +204,7 @@ The way the user informs the program about which flags/options to use and where 
 
 The file `src/main.py` shows you a very rudementary way of handling this in Python; in later projects we will see more advanced (and better) techniques.
 
-You do not need to modify anything in this file, but I encourage you to read it, to get an idea about how you can turn your own code into something that works as a command-line tool. It won't be long before you will need to know how to do this.
+You do not need to modify anything in this file, but we encourage you to read it, to get an idea about how you can turn your own code into something that works as a command-line tool. It won't be long before you will need to know how to do this.
 
 For this project, though, once you have implemented the functions in `src/align.py` and `src/cigar.py`, you can use `src/main.py` as a command-line tool.
 
